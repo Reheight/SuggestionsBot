@@ -110,10 +110,6 @@ bot.on('message', (message) => {
                                                     .setAuthor(guild.name, guild.iconURL())
                                                     .setTitle("Suggestion")
                                                     .setDescription(`\`\`\`${message}\`\`\``)
-                                                    .addField(
-                                                        "Submitter",
-                                                        `<@${author.id}>`
-                                                    )
                                                     .setFooter("Nexus Online Sevices LLP")
                                                     .setColor(config.EMBED_COLOR)
                                                     .setTimestamp()
@@ -235,10 +231,6 @@ bot.on('message', (message) => {
                                                     .setAuthor(guild.name, guild.iconURL())
                                                     .setTitle("Suggestion")
                                                     .setDescription(`\`\`\`${message}\`\`\``)
-                                                    .addField(
-                                                        "Submitter",
-                                                        `<@${author.id}>`
-                                                    )
                                                     .setFooter("Nexus Online Sevices LLP")
                                                     .setColor(config.EMBED_COLOR)
                                                     .setTimestamp()
