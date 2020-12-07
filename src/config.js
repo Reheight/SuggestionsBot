@@ -60,6 +60,7 @@ const VOTING_CHANNELS = {
 // Channels for approval.
 
 const APPROVAL_CHANNEL = "785260349527556116";
+const HISTORY_CHANNEL = "785298619082604564";
 
 module.exports = {
     ROLES,
@@ -69,5 +70,6 @@ module.exports = {
     EMBED_COLOR,
     SUBMISSION_CHANNELS,
     VOTING_CHANNELS,
-    APPROVAL_CHANNEL
+    APPROVAL_CHANNEL,
+    HISTORY_CHANNEL
 }
