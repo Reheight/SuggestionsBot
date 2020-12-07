@@ -72,4 +72,8 @@ module.exports = {
     VOTING_CHANNELS,
     APPROVAL_CHANNEL,
     HISTORY_CHANNEL
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> dee7497a3f97fd7f0c1316fce1a9705467467a5c
