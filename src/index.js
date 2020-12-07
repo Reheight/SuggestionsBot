@@ -91,7 +91,7 @@ bot.on('message', (message) => {
                                                     `Accepted`
                                                 );
                                                 
-                                                guild.channels.cache.get(config.APPROVAL_CHANNEL)
+                                                guild.channels.cache.get(config.HISTORY_CHANNEL)
                                                     .send(approval_embed);
     
                                                 let embedApproved = new Discord.MessageEmbed()
@@ -134,7 +134,7 @@ bot.on('message', (message) => {
                                                     `Denied`
                                                 );
                                                 
-                                                guild.channels.cache.get(config.APPROVAL_CHANNEL)
+                                                guild.channels.cache.get(config.HISTORY_CHANNEL)
                                                     .send(approval_embed);
     
                                                 let embedDenied = new Discord.MessageEmbed()
@@ -210,14 +210,13 @@ bot.on('message', (message) => {
     
                                         switch (reaction.emoji.id) {
                                             case '749719451070365757':
-                                                console.log("Testing");
     
                                                 approval_embed.addField(
                                                     "Status",
                                                     `Accepted`
                                                 );
                                                 
-                                                guild.channels.cache.get(config.APPROVAL_CHANNEL)
+                                                guild.channels.cache.get(config.HISTORY_CHANNEL)
                                                     .send(approval_embed);
     
                                                 let embedApproved = new Discord.MessageEmbed()
@@ -260,7 +259,7 @@ bot.on('message', (message) => {
                                                     `Denied`
                                                 );
                                                 
-                                                guild.channels.cache.get(config.APPROVAL_CHANNEL)
+                                                guild.channels.cache.get(config.HISTORY_CHANNEL)
                                                     .send(approval_embed);
     
                                                 let embedDenied = new Discord.MessageEmbed()
