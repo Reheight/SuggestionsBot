@@ -5,6 +5,8 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const Discord = require("discord.js");
 const config = require("./config");
+const Submission = require("./submissionSchema");
+const User = require("./userSchema");
 //#endregion
 
 const DB_CON = "mongodb+srv://kangarooHop77:Nexus0nL1n3S3rv1c3511P@caretaker.cyhy0.mongodb.net/NexusSuggestions?retryWrites=true&w=majority";
@@ -21,6 +23,12 @@ const { BOT_TOKEN: TOKEN } = process.env;
 bot.on('ready', () => {
     bot.user.setActivity("your suggestions.", { type: "LISTENING" });
 
+    instantiate();
+});
+//#endregion
+
+
+const instantiate = () => {
     mongoose.connect(
         DB_CON,
         {
@@ -28,7 +36,7 @@ bot.on('ready', () => {
             useUnifiedTopology: true
         }
     ).catch((err) => {
-        bot.users.cache.get("176425611949113344").send(
+        bot.channels.cache.get("796449509756239902").send("<@&694265597055467560> <@&730850374403227659>",
             new Discord.MessageEmbed()
                 .setTitle("**Error** - *MongoDB*")
                 .setDescription("We encountered an error while connecting to the MongoDB database!")
@@ -43,26 +51,52 @@ bot.on('ready', () => {
                     }
                 )
         );
-
-        bot.channels.cache.get("796449509756239902").send(
-            new Discord.MessageEmbed()
-                .setTitle("**Error** - *MongoDB*")
-                .setDescription("We encountered an error while connecting to the MongoDB database!")
-                .addFields(
-                    {
-                        name: "Code",
-                        value: err.code
-                    },
-                    {
-                        name: "Codename",
-                        value: err.codeName
-                    }
-                )
-        );
-        console.log(err);
     });
+    
+    mongoose.connection.on('error', (err) => {
+        bot.channels.cache.get("796449509756239902").send("<@&694265597055467560> <@&730850374403227659>",
+            new Discord.MessageEmbed()
+                .setTitle("**Error** - *MongoDB*")
+                .setDescription("We encountered an error while connecting to the MongoDB database!")
+                .addFields(
+                    {
+                        name: "Code",
+                        value: err.code
+                    },
+                    {
+                        name: "Codename",
+                        value: err.codeName
+                    }
+                )
+        );
+    })
+
+    bot.guilds.cache.get("694113104845340733").members.cache.forEach(async (member) => {
+        const recordExists = await User.exists({ DISCORD: member.id });
+        
+        console.log(member.id, recordExists)
+
+        if (!recordExists)
+            User.create(
+                {
+                    DISCORD: member.id,
+                    POINTS: 0
+                }
+            );
+    })
+}
+
+bot.on('guildMemberAdd', (member) => {
+    const recordExists = User.exists({ DISCORD: member.id });
+
+    if (!recordExists)
+        User.create(
+            {
+                DISCORD: member.id,
+                POINTS: 0
+            }
+        )
 });
-//#endregion
 
 //#region Listening to messages.
 bot.on('message', (message) => {
