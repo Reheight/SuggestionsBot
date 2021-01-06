@@ -117,6 +117,9 @@ const messageListener = async () => {
                     case 1:
                         await initPending(SUB_CHANNEL, SUB_MESSAGE, SUB_AUTHOR, SUB_NETWORK, SUB_SUGGESTION)
                         break;
+                    case 2:
+                        await initVoting(SUB_CHANNEL, SUB_MESSAGE, SUB_AUTHOR, SUB_NETWORK, SUB_SUGGESTION)
+                        break;
                 }
             })
         })
@@ -222,7 +225,7 @@ async function initPending(channel, message, author, network, suggestion) {
                                                 CHANNEL: msg.channel.id,
                                                 MESSAGE: msg.id,
                                                 STAGE: 2
-                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+                                            }).then(document => (document.get("UPVOTES").includes(u.id) || (document.get("DOWNVOTES").includes(u.id)))).catch(() => true);
 
                                             if (userHasReacted)
                                                 return;
@@ -279,7 +282,7 @@ async function initPending(channel, message, author, network, suggestion) {
                                                 CHANNEL: msg.channel.id,
                                                 MESSAGE: msg.id,
                                                 STAGE: 2
-                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+                                            }).then(document => (document.get("UPVOTES").includes(u.id) || (document.get("DOWNVOTES").includes(u.id)))).catch(() => true);
 
                                             if (userHasReacted)
                                                 return;
@@ -347,6 +350,56 @@ async function initPending(channel, message, author, network, suggestion) {
                 }
             })
         })
+}
+
+/**
+ * Initialize Pending Suggestion
+ * @param {Discord.TextChannel} channel 
+ * @param {Discord.Message} message 
+ * @param {Discord.User} author
+ * @param {String} network
+ * @param {String} suggestion
+ */
+async function initVoting(channel, message, author, network, suggestion) {
+    const votersMap = [];
+    const filterVote = (reaction, user) => !user.bot && user.id !== author.id && !votersMap.includes(user.id) && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+    const collector = message.createReactionCollector(filterVote, {});
+
+    return collector.on('collect', async (r, u) => {
+        const userHasReacted = await Submission.findOne({
+            CHANNEL: message.channel.id,
+            MESSAGE: message.id,
+            STAGE: 2
+        }).then(document => (document.get("UPVOTES").includes(u.id) || (document.get("DOWNVOTES").includes(u.id)))).catch(() => true);
+
+        if (userHasReacted)
+            return;
+
+        if (r.emoji.id === "749719451070365757") {
+            await Submission.findOneAndUpdate(
+                { CHANNEL: message.channel.id, MESSAGE: message.id, STAGE: 2 },
+                {
+                    $push : { UPVOTES: u.id }
+                }
+            );
+        }
+
+        if (r.emoji.id === "749719451271823411") {
+            await Submission.findOneAndUpdate(
+                { CHANNEL: message.channel.id, MESSAGE: message.id, STAGE: 2 },
+                {
+                    $push : { DOWNVOTES: u.id }
+                }
+            );
+        }
+
+        votersMap.push(u.id);
+
+        await User.findOneAndUpdate(
+            { DISCORD: u.id },
+            { $inc: { POINTS: 1 } }
+        );
+    })
 }
 
 bot.on('guildMemberAdd', async (member) => {
@@ -503,7 +556,7 @@ bot.on('message', async (message) => {
                                                                 CHANNEL: msg.channel.id,
                                                                 MESSAGE: msg.id,
                                                                 STAGE: 2
-                                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+                                                            }).then(document => (document.get("UPVOTES").includes(u.id) || (document.get("DOWNVOTES").includes(u.id)))).catch(() => true);
 
                                                             if (userHasReacted)
                                                                 return;
@@ -694,7 +747,7 @@ bot.on('message', async (message) => {
                                                                 CHANNEL: msg.channel.id,
                                                                 MESSAGE: msg.id,
                                                                 STAGE: 2
-                                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+                                                            }).then(document => (document.get("UPVOTES").includes(u.id) || (document.get("DOWNVOTES").includes(u.id)))).catch(() => true);
 
                                                             if (userHasReacted)
                                                                 return;
