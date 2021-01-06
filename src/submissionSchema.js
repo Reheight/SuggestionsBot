@@ -3,13 +3,14 @@ const { Schema, model } = require("mongoose");
 const Submission = new Schema({
     NETWORK: String,
     AUTHOR: Number,
+    SUBMISSION: String,
     DATE: {
         type: Date,
         default: Date.now
     },
     UPVOTES: Array,
     DOWNVOTES: Array,
-    STATUS: Number,
+    STATUS: Boolean,
     STAGE: Number,
     CHANNEL: Number,
     MESSAGE: Number,

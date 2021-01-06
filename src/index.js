@@ -29,7 +29,7 @@ bot.on('ready', () => {
 //#endregion
 
 
-const instantiate = () => {
+const instantiate = async() => {
     mongoose.connect(
         DB_CON,
         {
@@ -71,6 +71,8 @@ const instantiate = () => {
                     }
                 )
         );
+
+        
     });
 
     /* bot.guilds.cache.get("694113104845340733").members.cache.forEach(async (member) => {
@@ -88,6 +90,40 @@ const instantiate = () => {
                 }
             );
     }) */
+
+    await messageListener();
+}
+
+const messageListener = async () => {
+    await Submission
+        .find(
+            {
+                STATUS: true
+            }
+        ).then(async (documents) => {
+            await documents.forEach(async (document) => {
+                const SUB_STAGE = document.get("STAGE");
+                const SUB_CHANNEL = document.get("CHANNEL");
+                const SUB_MESSAGE = document.get("MESSAGE");
+                const SUB_AUTHOR = document.get("AUTHOR");
+
+                switch (SUB_STAGE) {
+                    case 1:
+                        await initPending(SUB_CHANNEL, SUB_MESSAGE, SUB_AUTHOR)
+                        break;
+                }
+            })
+        })
+}
+
+/**
+ * Initialize Pending Suggestion
+ * @param {Discord.TextChannel} channel 
+ * @param {Discord.Message} message 
+ * @param {Discord.User} author
+ */
+async function initPending(channel, message, author) {
+    console.log(bot.users.cache);
 }
 
 bot.on('guildMemberAdd', async (member) => {
@@ -109,6 +145,8 @@ bot.on('message', async (message) => {
     const author = message.author;
     const channel = message.channel;
     const guild = message.guild;
+    const channelIdentifier = channel.id;
+    const guildIdentifier = `694113104845340733`;
 
     if (!author.bot) {
         MessageLog.create(
@@ -177,7 +215,21 @@ bot.on('message', async (message) => {
                     .setTimestamp()
     
                 guild.channels.cache.get(config.APPROVAL_CHANNEL)
-                        .send(approval_embed).then(msg => {
+                        .send(approval_embed).then(msg => {    
+                            const messageIdentifier = msg.id;
+                            Submission.create({
+                                NETWORK: "RustAcademy",
+                                AUTHOR: author.id,
+                                SUBMISSION: message,
+                                UPVOTES: [],
+                                DOWNVOTES: [],
+                                STATUS: true,
+                                STAGE: 1,
+                                CHANNEL: config.APPROVAL_CHANNEL,
+                                MESSAGE: messageIdentifier,
+                                GUILD: guildIdentifier
+                            });
+
                             msg.react("<:Yes:749719451070365757>");
                             msg.react("<:No:749719451271823411>");
     
@@ -298,6 +350,20 @@ bot.on('message', async (message) => {
     
                 guild.channels.cache.get(config.APPROVAL_CHANNEL)
                         .send(approval_embed).then(msg => {
+                            const messageIdentifier = msg.id;
+                            Submission.create({
+                                NETWORK: "AndysolAM",
+                                AUTHOR: author.id,
+                                SUBMISSION: message,
+                                UPVOTES: [],
+                                DOWNVOTES: [],
+                                STATUS: true,
+                                STAGE: 1,
+                                CHANNEL: config.APPROVAL_CHANNEL,
+                                MESSAGE: messageIdentifier,
+                                GUILD: guildIdentifier
+                            })
+                            
                             msg.react("<:Yes:749719451070365757>");
                             msg.react("<:No:749719451271823411>");
     
