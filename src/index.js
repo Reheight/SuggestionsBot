@@ -104,7 +104,11 @@ const messageListener = async () => {
             await documents.forEach(async (document) => {
                 const SUB_STAGE = document.get("STAGE");
                 const SUB_CHANNEL = bot.channels.cache.get(document.get("CHANNEL"));
-                const SUB_MESSAGE = await SUB_CHANNEL.messages.fetch(document.get("MESSAGE"));
+                const SUB_MESSAGE = await SUB_CHANNEL.messages.fetch(document.get("MESSAGE")).catch(async (err) => {
+                    console.log("Attempted to fetch a message that seems to no longer exist -- now disabling in database for redundancy.");
+
+                    await document.updateOne({ STATUS: false });
+                });
                 const SUB_AUTHOR = bot.users.cache.get(document.get("AUTHOR"));
                 const SUB_NETWORK = document.get("NETWORK");
                 const SUB_SUGGESTION = document.get("SUBMISSION");
@@ -196,7 +200,7 @@ async function initPending(channel, message, author, network, suggestion) {
                             case "AndysolAM":
                                 guild.channels.cache.get(config.VOTING_CHANNELS.ANDYSOLAM)
                                     .send(embedCommunity)
-                                    .then(async msg => {
+                                    .then(async (msg) => {
                                         msg.react("<:Yes:749719451070365757>");
                                         msg.react("<:No:749719451271823411>");
 
@@ -208,6 +212,46 @@ async function initPending(channel, message, author, network, suggestion) {
                                                 STAGE: 2
                                             }
                                         )
+
+                                        const votersMap = [];
+                                        const filterVote = (reaction, user) => !user.bot && user.id !== author.id && !votersMap.includes(user.id) && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+                                        const collector = msg.createReactionCollector(filterVote, {});
+
+                                        return collector.on('collect', async (r, u) => {
+                                            const userHasReacted = await Submission.findOne({
+                                                CHANNEL: msg.channel.id,
+                                                MESSAGE: msg.id,
+                                                STAGE: 2
+                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+
+                                            if (userHasReacted)
+                                                return;
+
+                                            if (r.emoji.id === "749719451070365757") {
+                                                await Submission.findOneAndUpdate(
+                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                    {
+                                                        $push : { UPVOTES: u.id }
+                                                    }
+                                                );
+                                            }
+
+                                            if (r.emoji.id === "749719451271823411") {
+                                                await Submission.findOneAndUpdate(
+                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                    {
+                                                        $push : { DOWNVOTES: u.id }
+                                                    }
+                                                );
+                                            }
+
+                                            votersMap.push(u.id);
+
+                                            await User.findOneAndUpdate(
+                                                { DISCORD: u.id },
+                                                { $inc: { POINTS: 1 } }
+                                            );
+                                        })
                                     })
                                 break;
                             case "RustAcademy":
@@ -225,6 +269,46 @@ async function initPending(channel, message, author, network, suggestion) {
                                                 STAGE: 2
                                             }
                                         )
+
+                                        const votersMap = [];
+                                        const filterVote = (reaction, user) => !user.bot && user.id !== author.id && !votersMap.includes(user.id) && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+                                        const collector = msg.createReactionCollector(filterVote, {});
+
+                                        return collector.on('collect', async (r, u) => {
+                                            const userHasReacted = await Submission.findOne({
+                                                CHANNEL: msg.channel.id,
+                                                MESSAGE: msg.id,
+                                                STAGE: 2
+                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+
+                                            if (userHasReacted)
+                                                return;
+
+                                            if (r.emoji.id === "749719451070365757") {
+                                                await Submission.findOneAndUpdate(
+                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                    {
+                                                        $push : { UPVOTES: u.id }
+                                                    }
+                                                );
+                                            }
+
+                                            if (r.emoji.id === "749719451271823411") {
+                                                await Submission.findOneAndUpdate(
+                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                    {
+                                                        $push : { DOWNVOTES: u.id }
+                                                    }
+                                                );
+                                            }
+
+                                            votersMap.push(u.id);
+
+                                            await User.findOneAndUpdate(
+                                                { DISCORD: u.id },
+                                                { $inc: { POINTS: 1 } }
+                                            );
+                                        })
                                     })
                                 break;
                         }
@@ -409,6 +493,46 @@ bot.on('message', async (message) => {
                                                                 STAGE: 2
                                                             }
                                                         )
+
+                                                        const votersMap = [];
+                                                        const filterVote = (reaction, user) => !user.bot && user.id !== author.id && !votersMap.includes(user.id) && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+                                                        const collector = msg.createReactionCollector(filterVote, {});
+
+                                                        return collector.on('collect', async (r, u) => {
+                                                            const userHasReacted = await Submission.findOne({
+                                                                CHANNEL: msg.channel.id,
+                                                                MESSAGE: msg.id,
+                                                                STAGE: 2
+                                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+
+                                                            if (userHasReacted)
+                                                                return;
+
+                                                            if (r.emoji.id === "749719451070365757") {
+                                                                await Submission.findOneAndUpdate(
+                                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                                    {
+                                                                        $push : { UPVOTES: u.id }
+                                                                    }
+                                                                );
+                                                            }
+
+                                                            if (r.emoji.id === "749719451271823411") {
+                                                                await Submission.findOneAndUpdate(
+                                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                                    {
+                                                                        $push : { DOWNVOTES: u.id }
+                                                                    }
+                                                                );
+                                                            }
+                                                            
+                                                            votersMap.push(u.id);
+
+                                                            await User.findOneAndUpdate(
+                                                                { DISCORD: u.id },
+                                                                { $inc: { POINTS: 1 } }
+                                                            );
+                                                        })
                                                     })
 
                                                 approval_embed.addField(
@@ -560,6 +684,46 @@ bot.on('message', async (message) => {
                                                                 STAGE: 2
                                                             }
                                                         )
+
+                                                        const votersMap = [];
+                                                        const filterVote = (reaction, user) => !user.bot && user.id !== author.id && !votersMap.includes(user.id) && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+                                                        const collector = msg.createReactionCollector(filterVote, {});
+
+                                                        return collector.on('collect', async (r, u) => {
+                                                            const userHasReacted = await Submission.findOne({
+                                                                CHANNEL: msg.channel.id,
+                                                                MESSAGE: msg.id,
+                                                                STAGE: 2
+                                                            }).then(document => (document.get("UPVOTES").includes(u.id)).catch(() => true) || (document.get("DOWNVOTES").includes(u.id))).catch(() => true);
+
+                                                            if (userHasReacted)
+                                                                return;
+
+                                                            if (r.emoji.id === "749719451070365757") {
+                                                                await Submission.findOneAndUpdate(
+                                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                                    {
+                                                                        $push : { UPVOTES: u.id }
+                                                                    }
+                                                                );
+                                                            }
+
+                                                            if (r.emoji.id === "749719451271823411") {
+                                                                await Submission.findOneAndUpdate(
+                                                                    { CHANNEL: msg.channel.id, MESSAGE: msg.id, STAGE: 2 },
+                                                                    {
+                                                                        $push : { DOWNVOTES: u.id }
+                                                                    }
+                                                                );
+                                                            }
+                                                            
+                                                            votersMap.push(u.id);
+
+                                                            await User.findOneAndUpdate(
+                                                                { DISCORD: u.id },
+                                                                { $inc: { POINTS: 1 } }
+                                                            );
+                                                        })
                                                     })
 
                                                 approval_embed.addField(
