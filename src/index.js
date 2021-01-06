@@ -7,6 +7,7 @@ const Discord = require("discord.js");
 const config = require("./config");
 const Submission = require("./submissionSchema");
 const User = require("./userSchema");
+const MessageLog = require("./messageLogSchema");
 //#endregion
 
 const DB_CON = "mongodb+srv://kangarooHop77:Nexus0nL1n3S3rv1c3511P@caretaker.cyhy0.mongodb.net/NexusSuggestions?retryWrites=true&w=majority";
@@ -33,7 +34,8 @@ const instantiate = () => {
         DB_CON,
         {
             useNewUrlParser: true,
-            useUnifiedTopology: true
+            useUnifiedTopology: true,
+            useFindAndModify: false
         }
     ).catch((err) => {
         bot.channels.cache.get("796449509756239902").send("<@&694265597055467560> <@&730850374403227659>",
@@ -69,9 +71,9 @@ const instantiate = () => {
                     }
                 )
         );
-    })
+    });
 
-    bot.guilds.cache.get("694113104845340733").members.cache.forEach(async (member) => {
+    /* bot.guilds.cache.get("694113104845340733").members.cache.forEach(async (member) => {
         const recordExists = await User.exists({ DISCORD: member.id });
         
         console.log(member.id, recordExists)
@@ -80,29 +82,59 @@ const instantiate = () => {
             User.create(
                 {
                     DISCORD: member.id,
-                    POINTS: 0
+                    POINTS: 0,
+                    MESSAGES: 0,
+                    SUBMISSIONS: 0
                 }
             );
-    })
+    }) */
 }
 
-bot.on('guildMemberAdd', (member) => {
-    const recordExists = User.exists({ DISCORD: member.id });
+bot.on('guildMemberAdd', async (member) => {
+    const recordExists = await User.exists({ DISCORD: member.id });
 
     if (!recordExists)
         User.create(
             {
                 DISCORD: member.id,
-                POINTS: 0
+                POINTS: 0,
+                MESSAGES: 0,
+                SUBMISSIONS: 0
             }
         )
 });
 
 //#region Listening to messages.
-bot.on('message', (message) => {
+bot.on('message', async (message) => {
     const author = message.author;
     const channel = message.channel;
     const guild = message.guild;
+
+    if (!author.bot) {
+        MessageLog.create(
+            {
+                AUTHOR: author.id,
+                MESSAGE: message.content,
+                CHANNEL: channel.id,
+                MESSAGEID: message.id,
+                LINK: `https://www.discord.com/channels/694113104845340733/${channel.id}/${message.id}`
+            }
+        )
+    };
+
+    const DISCUSSION_CHANNELS = [config.DISCUSSION_CHANNELS.ANDYSOLAM, config.DISCUSSION_CHANNELS.RUSTACADEMY];
+    if (DISCUSSION_CHANNELS.includes(channel.id)) {
+        const identifier = author.id;
+        const recordExists = await User.exists({ DISCORD: identifier });
+
+        if (recordExists) 
+            await User.findOneAndUpdate(
+                { DISCORD: identifier },
+                { $inc: { POINTS: 0.05,  MESSAGES: 1 } }
+            );
+
+        return;
+    }
 
     let embed;
     let approval_embed;
