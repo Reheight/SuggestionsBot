@@ -103,13 +103,15 @@ const messageListener = async () => {
         ).then(async (documents) => {
             await documents.forEach(async (document) => {
                 const SUB_STAGE = document.get("STAGE");
-                const SUB_CHANNEL = document.get("CHANNEL");
-                const SUB_MESSAGE = document.get("MESSAGE");
+                const SUB_CHANNEL = bot.channels.cache.get(document.get("CHANNEL"));
+                const SUB_MESSAGE = await SUB_CHANNEL.messages.fetch(document.get("MESSAGE"));
                 const SUB_AUTHOR = bot.users.cache.get(document.get("AUTHOR"));
+                const SUB_NETWORK = document.get("NETWORK");
+                const SUB_SUGGESTION = document.get("SUBMISSION");
 
                 switch (SUB_STAGE) {
                     case 1:
-                        await initPending(SUB_CHANNEL, SUB_MESSAGE, SUB_AUTHOR)
+                        await initPending(SUB_CHANNEL, SUB_MESSAGE, SUB_AUTHOR, SUB_NETWORK, SUB_SUGGESTION)
                         break;
                 }
             })
@@ -121,9 +123,146 @@ const messageListener = async () => {
  * @param {Discord.TextChannel} channel 
  * @param {Discord.Message} message 
  * @param {Discord.User} author
+ * @param {String} network
+ * @param {String} suggestion
  */
-async function initPending(channel, message, author) {
-    author.send("TEST");
+async function initPending(channel, message, author, network, suggestion) {
+    const guild = bot.guilds.cache.get("694113104845340733");
+
+    let approval_embed = new Discord.MessageEmbed()
+                    .setAuthor(guild.name, guild.iconURL())
+                    .setTitle("Suggestion Submitted")
+                    .setDescription(
+                        `\`\`\`${suggestion}\`\`\``
+                    )
+                    .addField(
+                        "Author",
+                        `<@${author.id}>`
+                    )
+                    .addField(
+                        "Network",
+                        network
+                    )
+                    .setFooter("Nexus Online Sevices LLP")
+                    .setColor(config.EMBED_COLOR)
+                    .setTimestamp()
+
+    const filter = (reaction, user) => {
+        return ['749719451070365757', '749719451271823411'].includes(reaction.emoji.id) && user.id !== bot.user.id;
+    };
+
+    message.awaitReactions(
+        filter,
+        {
+            max: 1,
+        }).then((collected) => {
+            message.delete().then(async () => {
+                const reaction = collected.first();
+
+                switch (reaction.emoji.id) {
+                    case '749719451070365757':
+                        approval_embed.addField(
+                            "Status",
+                            `Accepted`
+                        );
+                        
+                        guild.channels.cache.get(config.HISTORY_CHANNEL)
+                            .send(approval_embed);
+
+                        let embedApproved = new Discord.MessageEmbed()
+                            .setAuthor(guild.name, guild.iconURL())
+                            .setTitle("Suggestion Approved")
+                            .setDescription("Your suggesion has been approved is now being voted on by the community!")
+                            .addField(
+                                "Suggestion",
+                                `\`${suggestion}\``
+                            )
+                            .setFooter("Nexus Online Sevices LLP")
+                            .setColor(config.EMBED_COLOR)
+                            .setTimestamp()
+
+                        let embedCommunity = new Discord.MessageEmbed()
+                            .setAuthor(guild.name, guild.iconURL())
+                            .setTitle("Suggestion")
+                            .setDescription(`\`\`\`${message}\`\`\``)
+                            .setFooter("Nexus Online Sevices LLP")
+                            .setColor(config.EMBED_COLOR)
+                            .setTimestamp()
+
+                        author.send(author,
+                            embedApproved);
+                        
+                        switch (network) {
+                            case "AndysolAM":
+                                guild.channels.cache.get(config.VOTING_CHANNELS.ANDYSOLAM)
+                                    .send(embedCommunity)
+                                    .then(async msg => {
+                                        msg.react("<:Yes:749719451070365757>");
+                                        msg.react("<:No:749719451271823411>");
+
+                                        await Submission.findOneAndUpdate(
+                                            { CHANNEL: config.APPROVAL_CHANNEL, MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                            {
+                                                CHANNEL: msg.channel.id,
+                                                MESSAGE: msg.id,
+                                                STAGE: 2
+                                            }
+                                        )
+                                    })
+                                break;
+                            case "RustAcademy":
+                                guild.channels.cache.get(config.VOTING_CHANNELS.RUSTACADEMY)
+                                    .send(embedCommunity)
+                                    .then(async msg => {
+                                        msg.react("<:Yes:749719451070365757>");
+                                        msg.react("<:No:749719451271823411>");
+
+                                        await Submission.findOneAndUpdate(
+                                            { CHANNEL: config.APPROVAL_CHANNEL, MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                            {
+                                                CHANNEL: msg.channel.id,
+                                                MESSAGE: msg.id,
+                                                STAGE: 2
+                                            }
+                                        )
+                                    })
+                                break;
+                        }
+                        break;
+                    case '749719451271823411':
+                        approval_embed.addField(
+                            "Status",
+                            `Denied`
+                        );
+                        
+                        guild.channels.cache.get(config.HISTORY_CHANNEL)
+                            .send(approval_embed);
+
+                        let embedDenied = new Discord.MessageEmbed()
+                            .setAuthor(guild.name, guild.iconURL())
+                            .setTitle("Suggestion Approved")
+                            .setDescription("Your suggesion has been denied we apologize, feel free to submit more in the future though!")
+                            .addField(
+                                "Suggestion",
+                                `\`${suggestion}\``
+                            )
+                            .setFooter("Nexus Online Sevices LLP")
+                            .setColor(config.EMBED_COLOR)
+                            .setTimestamp()
+                        
+                            await Submission.findOneAndUpdate(
+                                { MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                {
+                                    STAGE: 1,
+                                    STATUS: false
+                                }
+                            )
+                        
+                        author.send(author, embedDenied);
+                        break;
+                }
+            })
+        })
 }
 
 bot.on('guildMemberAdd', async (member) => {
@@ -145,7 +284,6 @@ bot.on('message', async (message) => {
     const author = message.author;
     const channel = message.channel;
     const guild = message.guild;
-    const channelIdentifier = channel.id;
     const guildIdentifier = `694113104845340733`;
 
     if (!author.bot) {
@@ -242,7 +380,7 @@ bot.on('message', async (message) => {
                                 {
                                     max: 1,
                                 }).then((collected) => {
-                                    msg.delete().then(() => {
+                                    msg.delete().then(async () => {
                                         const reaction = collected.first();
     
                                         switch (reaction.emoji.id) {
@@ -280,9 +418,18 @@ bot.on('message', async (message) => {
                                                 
                                                 guild.channels.cache.get(config.VOTING_CHANNELS.RUSTACADEMY)
                                                     .send(embedCommunity)
-                                                    .then(msg => {
+                                                    .then(async msg => {
                                                         msg.react("<:Yes:749719451070365757>");
                                                         msg.react("<:No:749719451271823411>");
+
+                                                        await Submission.findOneAndUpdate(
+                                                            { CHANNEL: config.APPROVAL_CHANNEL, MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                                            {
+                                                                CHANNEL: msg.channel.id,
+                                                                MESSAGE: msg.id,
+                                                                STAGE: 2
+                                                            }
+                                                        )
                                                     })
                                                 break;
                                             case '749719451271823411':
@@ -305,6 +452,14 @@ bot.on('message', async (message) => {
                                                     .setFooter("Nexus Online Sevices LLP")
                                                     .setColor(config.EMBED_COLOR)
                                                     .setTimestamp()
+                                                        
+                                                await Submission.findOneAndUpdate(
+                                                    { MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                                    {
+                                                        STAGE: 1,
+                                                        STATUS: false
+                                                    }
+                                                )
                                                 
                                                 author.send(author, embedDenied);
                                                 break;
@@ -376,12 +531,34 @@ bot.on('message', async (message) => {
                                 {
                                     max: 1,
                                 }).then((collected, user) => {
-                                    msg.delete().then(() => {
+                                    msg.delete().then(async () => {
                                         const reaction = collected.first();
     
                                         switch (reaction.emoji.id) {
                                             case '749719451070365757':
-    
+                                                let embedCommunity = new Discord.MessageEmbed()
+                                                    .setAuthor(guild.name, guild.iconURL())
+                                                    .setTitle("Suggestion")
+                                                    .setDescription(`\`\`\`${message}\`\`\``)
+                                                    .setFooter("Nexus Online Sevices LLP")
+                                                    .setColor(config.EMBED_COLOR)
+                                                    .setTimestamp()
+                                                guild.channels.cache.get(config.VOTING_CHANNELS.ANDYSOLAM)
+                                                    .send(embedCommunity)
+                                                    .then(async msg => {
+                                                        msg.react("<:Yes:749719451070365757>");
+                                                        msg.react("<:No:749719451271823411>");
+
+                                                        await Submission.findOneAndUpdate(
+                                                            { CHANNEL: config.APPROVAL_CHANNEL, MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                                            {
+                                                                CHANNEL: msg.channel.id,
+                                                                MESSAGE: msg.id,
+                                                                STAGE: 2
+                                                            }
+                                                        )
+                                                    })
+
                                                 approval_embed.addField(
                                                     "Status",
                                                     `Accepted`
@@ -402,25 +579,19 @@ bot.on('message', async (message) => {
                                                     .setColor(config.EMBED_COLOR)
                                                     .setTimestamp()
     
-                                                let embedCommunity = new Discord.MessageEmbed()
-                                                    .setAuthor(guild.name, guild.iconURL())
-                                                    .setTitle("Suggestion")
-                                                    .setDescription(`\`\`\`${message}\`\`\``)
-                                                    .setFooter("Nexus Online Sevices LLP")
-                                                    .setColor(config.EMBED_COLOR)
-                                                    .setTimestamp()
-    
                                                 author.send(author,
                                                     embedApproved);
                                                 
-                                                guild.channels.cache.get(config.VOTING_CHANNELS.ANDYSOLAM)
-                                                    .send(embedCommunity)
-                                                    .then(msg => {
-                                                        msg.react("<:Yes:749719451070365757>");
-                                                        msg.react("<:No:749719451271823411>");
-                                                    })
                                                 break;
                                             case '749719451271823411':
+                                                await Submission.findOneAndUpdate(
+                                                    { MESSAGE: message.id, AUTHOR: author.id, STAGE: 1 },
+                                                    {
+                                                        STAGE: 1,
+                                                        STATUS: false
+                                                    }
+                                                )
+                                                
                                                 approval_embed.addField(
                                                     "Status",
                                                     `Denied`
