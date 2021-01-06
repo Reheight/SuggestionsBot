@@ -1,14 +1,14 @@
 const { Schema, model } = require("mongoose");
 
 const Message = new Schema({
-    AUTHOR: Number,
+    AUTHOR: String,
     DATE: {
         type: Date,
         default: Date.now
     },
     MESSAGE: String,
-    CHANNEL: Number,
-    MESSAGEID: Number,
+    CHANNEL: String,
+    MESSAGEID: String,
     LINK: String
 });
 

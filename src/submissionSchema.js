@@ -2,7 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const Submission = new Schema({
     NETWORK: String,
-    AUTHOR: Number,
+    AUTHOR: String,
     SUBMISSION: String,
     DATE: {
         type: Date,
@@ -12,9 +12,9 @@ const Submission = new Schema({
     DOWNVOTES: Array,
     STATUS: Boolean,
     STAGE: Number,
-    CHANNEL: Number,
-    MESSAGE: Number,
-    GUILD: Number
+    CHANNEL: String,
+    MESSAGE: String,
+    GUILD: String
 });
 
 const SubmissionModel = model('Submission', Submission);

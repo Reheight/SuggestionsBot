@@ -105,7 +105,7 @@ const messageListener = async () => {
                 const SUB_STAGE = document.get("STAGE");
                 const SUB_CHANNEL = document.get("CHANNEL");
                 const SUB_MESSAGE = document.get("MESSAGE");
-                const SUB_AUTHOR = document.get("AUTHOR");
+                const SUB_AUTHOR = bot.users.cache.get(document.get("AUTHOR"));
 
                 switch (SUB_STAGE) {
                     case 1:
@@ -123,7 +123,7 @@ const messageListener = async () => {
  * @param {Discord.User} author
  */
 async function initPending(channel, message, author) {
-    console.log(bot.users.cache);
+    author.send("TEST");
 }
 
 bot.on('guildMemberAdd', async (member) => {
@@ -220,7 +220,7 @@ bot.on('message', async (message) => {
                             Submission.create({
                                 NETWORK: "RustAcademy",
                                 AUTHOR: author.id,
-                                SUBMISSION: message,
+                                SUBMISSION: message.content,
                                 UPVOTES: [],
                                 DOWNVOTES: [],
                                 STATUS: true,
