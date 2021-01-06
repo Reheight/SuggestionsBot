@@ -1,0 +1,17 @@
+-------------------- Auto-Git Log --------------------
+		Mon Dec 07 2020 15:04:10 GMT-0500 (Eastern Standard Time)
+------------------------------------------------------
+
+Modified files:
+* src/config.js
+* src/index.js
+
+
+Created files:
+* .autogit/autogit.json
+
+
+Deleted files:
+
+
+Renamed files:
