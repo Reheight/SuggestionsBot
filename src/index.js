@@ -8,6 +8,7 @@ const config = require("./config");
 const Submission = require("./submissionSchema");
 const User = require("./userSchema");
 const MessageLog = require("./messageLogSchema");
+const _ = require("lodash");
 //#endregion
 
 const DB_CON = "mongodb+srv://kangarooHop77:Nexus0nL1n3S3rv1c3511P@caretaker.cyhy0.mongodb.net/NexusSuggestions?retryWrites=true&w=majority";
@@ -498,7 +499,12 @@ bot.on('message', async (message) => {
 
         const member = guild.member(author);
 
-        if (!member.permissions.has("MANAGE_NICKNAMES")) return;
+        if (!member.roles.cache.some(r => [
+            "730850374403227659",
+            "694265597055467560",
+            "722220601271386164",
+            "775792319492128788"
+        ].includes(r.id))) return;
         if (channel.id !== "796513972618395699") return;
 
         switch (command) {
@@ -651,7 +657,7 @@ bot.on('message', async (message) => {
                                                 async (SUBMISSION) => {
                                                     SUBMISSION.MESSAGE.delete();
 
-                                                    await Submission.findOneAndReplace(
+                                                    await Submission.findOneAndUpdate(
                                                         {
                                                             STAGE: 2,
                                                             STATUS: true,
@@ -672,7 +678,7 @@ bot.on('message', async (message) => {
                                                 async (SUBMISSION) => {
                                                     SUBMISSION.MESSAGE.delete();
 
-                                                    await Submission.findOneAndReplace(
+                                                    await Submission.findOneAndUpdate(
                                                         {
                                                             STAGE: 2,
                                                             STATUS: true,
