@@ -547,6 +547,156 @@ bot.on('message', async (message) => {
                     })
                 }
                 break;
+            case "collect":
+                const collectConf = await message.channel.send(
+                    new Discord.MessageEmbed()
+                        .setTitle(`**Warning**`)
+                        .setAuthor(guild.name, guild.iconURL())
+                        .setDescription("If you do this you will end the current voting session, do you wish to continue?")
+                        .setFooter("Nexus Online Sevices LLP")
+                        .setColor(config.EMBED_COLOR)
+                        .setTimestamp()
+                );
+                
+                await collectConf.react("749719451070365757");
+                await collectConf.react("749719451271823411");
+
+                const collectFilter = (reaction, user) => !user.bot && user.id == message.author.id && (['749719451070365757', '749719451271823411'].includes(reaction.emoji.id));
+
+                collectConf.awaitReactions(
+                    collectFilter,
+                    {
+                        max: 1
+                    }
+                ).then(
+                    async (collection) => {
+                        const reaction = collection.first().emoji.id;
+
+                        switch (reaction) {
+                            case "749719451070365757":
+                                await collectConf.delete();
+
+                                const resultsMap = {
+                                    AndysolAM: [],
+                                    RustAcademy: []
+                                };
+
+                                await Submission
+                                    .find(
+                                        {
+                                            STATUS: true,
+                                            STAGE: 2
+                                        }
+                                    ).then(async (documents) => {
+                                        await documents.forEach(async (document) => {
+                                            const SUB_UPVOTES = document.get("UPVOTES");
+                                            const SUB_DOWNVOTES = document.get("DOWNVOTES");
+                                            const SUB_CHANNEL = bot.channels.cache.get(document.get("CHANNEL"));
+                                            const SUB_MESSAGE = await SUB_CHANNEL.messages.fetch(document.get("MESSAGE")).catch(async (err) => {
+                                                console.log("Attempted to fetch a message that seems to no longer exist -- now disabling in database for redundancy.");
+
+                                                await document.updateOne({ STATUS: false });
+                                            });
+                                            const SUB_AUTHOR = bot.users.cache.get(document.get("AUTHOR"));
+                                            const SUB_NETWORK = document.get("NETWORK");
+                                            const SUB_SUGGESTION = document.get("SUBMISSION");
+
+                                            const SUB_OBJECT = {
+                                                AUTHOR: SUB_AUTHOR,
+                                                MESSAGE: SUB_MESSAGE,
+                                                CHANNEL: SUB_CHANNEL,
+                                                SUGGESTION: SUB_SUGGESTION,
+                                                UPVOTES: SUB_UPVOTES,
+                                                DOWNVOTES: SUB_DOWNVOTES
+                                            };
+
+                                            switch (SUB_NETWORK) {
+                                                case "AndysolAM":
+                                                    resultsMap.AndysolAM.push(SUB_OBJECT);
+                                                    break;
+                                                case "RustAcademy":
+                                                    resultsMap.RustAcademy.push(SUB_OBJECT);
+                                                    break;
+                                            }
+                                        })
+                                    })
+
+                                    const results = new Discord.MessageEmbed()
+                                                .setTitle(`**Vote Collection**`)
+                                                .setAuthor(guild.name, guild.iconURL())
+                                                .setDescription(
+                                                    `__AndysolAM__ - *${resultsMap.AndysolAM.length} suggestions*
+                                                    ${
+                                                        resultsMap.AndysolAM.map(
+                                                            (SUBMISSION) => `- ${SUBMISSION.SUGGESTION} **[${SUBMISSION.UPVOTES.length} : ${SUBMISSION.DOWNVOTES.length}]**`
+                                                        ).join("\n")
+                                                    }
+                                                    __RustAcademy__ - *${resultsMap.RustAcademy.length} suggestions*
+                                                    ${
+                                                        resultsMap.RustAcademy.map(
+                                                            (SUBMISSION) => `- ${SUBMISSION.SUGGESTION} **[${SUBMISSION.UPVOTES.length} : ${SUBMISSION.DOWNVOTES.length}]**`
+                                                        ).join("\n")
+                                                    }
+                                                    `
+                                                )
+                                                .setFooter("Nexus Online Sevices LLP")
+                                                .setColor(config.EMBED_COLOR)
+                                                .setTimestamp()
+                                            
+                                            await bot.channels.cache.get("796758274455502885").send(results);
+
+                                            const timer = ms => new Promise(res => setTimeout(res, ms));
+
+                                            resultsMap.AndysolAM.forEach(
+                                                async (SUBMISSION) => {
+                                                    SUBMISSION.MESSAGE.delete();
+
+                                                    await Submission.findOneAndReplace(
+                                                        {
+                                                            STAGE: 2,
+                                                            STATUS: true,
+                                                            MESSAGE: SUBMISSION.MESSAGE.id,
+                                                            CHANNEL: SUBMISSION.CHANNEL.id
+                                                        },
+                                                        {
+                                                            STAGE: 3,
+                                                            STATUS: false
+                                                        }
+                                                    );
+
+                                                    await timer(1000);
+                                                }
+                                            );
+
+                                            resultsMap.RustAcademy.forEach(
+                                                async (SUBMISSION) => {
+                                                    SUBMISSION.MESSAGE.delete();
+
+                                                    await Submission.findOneAndReplace(
+                                                        {
+                                                            STAGE: 2,
+                                                            STATUS: true,
+                                                            MESSAGE: SUBMISSION.MESSAGE.id,
+                                                            CHANNEL: SUBMISSION.CHANNEL.id
+                                                        },
+                                                        {
+                                                            STAGE: 3,
+                                                            STATUS: false
+                                                        }
+                                                    );
+
+                                                    await timer(1000);
+                                                }
+                                            );
+                                break;
+                            case "749719451271823411":
+                                await collectConf.delete();
+                                break;
+                        }
+                    }
+                )
+
+                break;
         }
 
         return;
