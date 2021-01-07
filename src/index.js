@@ -21,12 +21,72 @@ const { BOT_TOKEN: TOKEN } = process.env;
 //#endregion
 
 //#region Bot is initialized
-bot.on('ready', () => {
+bot.on('ready', async () => {
     bot.user.setActivity("your suggestions.", { type: "LISTENING" });
+
+    const guild = bot.guilds.cache.get("694113104845340733");
+
+    const RoleAdjustment = await bot.channels.cache.get('796524172418351214').messages.fetch('796533243620753448');
+
+
+    /* bot.channels.cache.get("796524172418351214").send(
+        new Discord.MessageEmbed()
+            .setTitle("**Role Adjustment**")
+            .setAuthor(guild.name, guild.iconURL())
+            .setDescription(
+                `*Select the corresponding reactions that apply to you so you are able to access the appropriate resources.*
+                
+                <:andy:796531726540341268> - AndysolAM Servers
+                <:RA:796531726561574974> - RustAcademy Servers
+
+                **Note:** *Any abuse of this will not be tollerated.*`
+            )
+            .setFooter("Nexus Online Sevices LLP")
+            .setColor(config.EMBED_COLOR)
+            .setTimestamp()
+    ).then((msg) => {
+        msg.react("796531726540341268");
+        msg.react("796531726561574974");
+    }) */
+
 
     instantiate();
 });
 //#endregion
+
+bot.on("messageReactionAdd", (r, u) => {
+    const channel = "796524172418351214";
+    const message = "796533243620753448";
+
+    if (r.message.channel.id !== channel ||
+        r.message.id !== message) return;
+
+    switch (r.emoji.id) {
+        case "796531726540341268":
+            r.message.guild.member(u).roles.add("721838700035702974");
+            break;
+        case "796531726561574974":
+            r.message.guild.member(u).roles.add("721838771372556428");
+            break;
+    }
+});
+
+bot.on("messageReactionRemove", (r, u) => {
+    const channel = "796524172418351214";
+    const message = "796533243620753448";
+
+    if (r.message.channel.id !== channel ||
+        r.message.id !== message) return;
+
+    switch (r.emoji.id) {
+        case "796531726540341268":
+            r.message.guild.member(u).roles.remove("721838700035702974");
+            break;
+        case "796531726561574974":
+            r.message.guild.member(u).roles.remove("721838771372556428");
+            break;
+    }
+});
 
 
 const instantiate = async() => {
@@ -168,6 +228,11 @@ async function initPending(channel, message, author, network, suggestion) {
 
                 switch (reaction.emoji.id) {
                     case '749719451070365757':
+                        await User.findOneAndUpdate(
+                            { DISCORD: author.id },
+                            { $inc: { POINTS: 1, SUBMISSIONS: 1 } }
+                        );
+
                         approval_embed.addField(
                             "Status",
                             `Accepted`
@@ -414,6 +479,8 @@ bot.on('guildMemberAdd', async (member) => {
                 SUBMISSIONS: 0
             }
         )
+    
+    await member.roles.add("739270885113856051");
 });
 
 //#region Listening to messages.
@@ -423,6 +490,69 @@ bot.on('message', async (message) => {
     const guild = message.guild;
     const guildIdentifier = `694113104845340733`;
 
+    const prefix = "+";
+    
+    if (message.content.startsWith(prefix) && !message.author.bot) {
+        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const command = args.shift().toLowerCase();
+
+        const member = guild.member(author);
+
+        if (!member.permissions.has("MANAGE_NICKNAMES")) return;
+        if (channel.id !== "796513972618395699") return;
+
+        switch (command) {
+            case "lookup":
+                const identifier = message.mentions.users.size >= 1 ? message.mentions.users.first().id : args[0];
+
+                const exists = await User.exists({ DISCORD: identifier }).catch(() => false);
+
+                if (!exists) {
+                    const errorEmbed = new Discord.MessageEmbed()
+                        .setTitle("**Error** - *Invalid Account*")
+                        .setDescription("You attempted to lookup statistics about a player who we have no record of!")
+                        .setFooter("Nexus Online Sevices LLP")
+                        .setAuthor(guild.name, guild.iconURL())
+                        .setColor(config.EMBED_COLOR)
+                        .setTimestamp();
+                    
+                    message.reply(errorEmbed);
+                } else {
+                    await User.findOne({ DISCORD: identifier }).then(async (document) => {
+                            const lookupEmbed = new Discord.MessageEmbed()
+                            .setTitle(`**Lookup** - ${identifier}`)
+                            .setAuthor(guild.name, guild.iconURL())
+                            .setDescription("The results below are the most up to date!")
+                            .addFields(
+                                [
+                                    {
+                                        name: "Points",
+                                        value: document.get("POINTS")
+                                    },
+                                    {
+                                        name: "Messages",
+                                        value: document.get("MESSAGES")
+                                    },
+                                    {
+                                        name: "SUBMISSIONS",
+                                        value: document.get("SUBMISSIONS")
+                                    },
+                                ]
+                            )
+                            .setFooter("Nexus Online Sevices LLP")
+                            .setColor(config.EMBED_COLOR)
+                            .setTimestamp();
+
+                            message.reply(lookupEmbed);
+                    })
+                }
+                break;
+        }
+
+        return;
+    }
+	
+	/*
     if (!author.bot) {
         MessageLog.create(
             {
@@ -434,6 +564,7 @@ bot.on('message', async (message) => {
             }
         )
     };
+	*/
 
     const DISCUSSION_CHANNELS = [config.DISCUSSION_CHANNELS.ANDYSOLAM, config.DISCUSSION_CHANNELS.RUSTACADEMY];
     if (DISCUSSION_CHANNELS.includes(channel.id)) {
@@ -522,6 +653,11 @@ bot.on('message', async (message) => {
     
                                         switch (reaction.emoji.id) {
                                             case '749719451070365757':
+                                                await User.findOneAndUpdate(
+                                                    { DISCORD: author.id },
+                                                    { $inc: { POINTS: 1, SUBMISSIONS: 1 } }
+                                                );
+
                                                 const prevMSG = msg;
 
                                                 let embedCommunity = new Discord.MessageEmbed()
@@ -715,6 +851,11 @@ bot.on('message', async (message) => {
     
                                         switch (reaction.emoji.id) {
                                             case '749719451070365757':
+                                                await User.findOneAndUpdate(
+                                                    { DISCORD: author.id },
+                                                    { $inc: { POINTS: 1, SUBMISSIONS: 1 } }
+                                                );
+
                                                 const prevMSG = msg;
                                                 let embedCommunity = new Discord.MessageEmbed()
                                                     .setAuthor(guild.name, guild.iconURL())
